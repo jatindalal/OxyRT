@@ -4,12 +4,7 @@
 
 int main(int argc, char **argv)
 {
-    if (argc != 2) {
-        std::cerr << "Usage: " << argv[0] << " <Image path>\n";
-        return -1;
-    }
-
     App app;
-    app.run(argv[1]);
+    app.run();
     return 0;
 }
