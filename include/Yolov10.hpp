@@ -8,6 +8,7 @@
 
 class Yolov10 {
 public:
+    using BoxType = std::vector<std::tuple<float, float, float, float, float, unsigned int>>;
     Yolov10(std::string model_path)
         : m_model_path(model_path)
         , m_ort_env(ORT_LOGGING_LEVEL_WARNING, "yolov10")
@@ -15,8 +16,7 @@ public:
     {
     }
 
-    std::vector<std::tuple<float, float, float, float, float, int>>
-    infer(const cv::Mat &image_RGB, float min_score = 0.25f)
+    BoxType infer(const cv::Mat &image_RGB, float min_score = 0.25f)
     {
         constexpr int s_input_width = 640;
         constexpr int s_input_height = 640;
@@ -62,11 +62,11 @@ public:
         float *output_data = output_tensor.GetTensorMutableData<float>();
 
         const int detections = static_cast<int>(shape[1]);
-        std::vector<std::tuple<float, float, float, float, float, int>> boxes;
+        BoxType boxes;
         for (int i = 0; i < detections; i++) {
             const float *det = output_data + i * 6;
 
-            int cls = static_cast<int>(det[5]);
+            unsigned int cls = static_cast<unsigned int>(det[5]);
 
             float score = det[4];
             if (score < min_score) {
