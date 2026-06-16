@@ -6,7 +6,7 @@
 #include <onnxruntime_cxx_api.h>
 #include <opencv2/opencv.hpp>
 
-#ifdef __APPLE__
+#ifdef USE_COREML
 #include <coreml_provider_factory.h>
 #endif
 
@@ -97,10 +97,16 @@ private:
     {
         Ort::SessionOptions session_options;
         auto providers = Ort::GetAvailableProviders();
-#ifdef __APPLE__
+#ifdef USE_COREML
         if (std::find(providers.begin(), providers.end(), "CoreMLExecutionProvider") != providers.end()) {
             Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CoreML(session_options, 0));
             std::cout << "Using CoreML\n";
+        }
+#endif
+#ifdef USE_CUDA
+        if (std::find(providers.begin(), providers.end(), "CUDAExecutionProvider") != providers.end()) {
+            Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CUDA(session_options, 0));
+            std::cout << "Using CUDA\n";
         }
 #endif
         return Ort::Session(m_ort_env, m_model_path.c_str(), session_options);

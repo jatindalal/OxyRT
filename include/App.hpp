@@ -58,6 +58,7 @@ private:
                     cv::FONT_HERSHEY_DUPLEX, 2,
                     cv::Scalar(0, 0, 0), 1);
             }
+            cv::namedWindow("detections", cv::WINDOW_NORMAL);
             cv::imshow("detections", image);
             if (cv::pollKey() >= 0) {
                 m_shutdown = true;
