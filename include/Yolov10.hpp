@@ -1,5 +1,4 @@
 #pragma once
-#include "onnxruntime_c_api.h"
 #include <cstddef>
 #include <cstdint>
 
