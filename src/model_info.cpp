@@ -2,19 +2,22 @@
 
 #include <iostream>
 
-static void print_shape(const std::vector<int64_t>& shape) {
+static void print_shape(const std::vector<int64_t> &shape)
+{
     std::cout << "[";
 
     for (size_t i = 0; i < shape.size(); ++i) {
         std::cout << shape[i];
 
-        if (i + 1 < shape.size()) std::cout << ", ";
+        if (i + 1 < shape.size())
+            std::cout << ", ";
     }
 
     std::cout << "]";
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     if (argc != 2) {
         std::cerr << "Usage: " << argv[0] << " <model_path>\n";
         return -1;
@@ -63,4 +66,3 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-

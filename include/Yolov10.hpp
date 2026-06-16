@@ -1,10 +1,14 @@
 #pragma once
+#include "onnxruntime_c_api.h"
 #include <cstddef>
 #include <cstdint>
-#include <stdexcept>
 
 #include <onnxruntime_cxx_api.h>
 #include <opencv2/opencv.hpp>
+
+#ifdef __APPLE__
+#include <coreml_provider_factory.h>
+#endif
 
 class Yolov10 {
 public:
@@ -12,7 +16,7 @@ public:
     Yolov10(std::string model_path)
         : m_model_path(model_path)
         , m_ort_env(ORT_LOGGING_LEVEL_WARNING, "yolov10")
-        , m_session(m_ort_env, m_model_path.c_str(), { })
+        , m_session(create_session())
     {
     }
 
@@ -89,6 +93,18 @@ public:
     }
 
 private:
+    Ort::Session create_session()
+    {
+        Ort::SessionOptions session_options;
+        auto providers = Ort::GetAvailableProviders();
+#ifdef __APPLE__
+        if (std::find(providers.begin(), providers.end(), "CoreMLExecutionProvider") != providers.end()) {
+            Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CoreML(session_options, 0));
+            std::cout << "Using CoreML\n";
+        }
+#endif
+        return Ort::Session(m_ort_env, m_model_path.c_str(), session_options);
+    }
     std::string m_model_path;
     Ort::Env m_ort_env;
     Ort::Session m_session;
