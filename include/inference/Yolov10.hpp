@@ -11,7 +11,20 @@
 
 class Yolov10 {
 public:
-    using BoxType = std::vector<std::tuple<float, float, float, float, float, unsigned int>>;
+    struct Detection {
+        float m_x1;
+        float m_y1;
+        float m_x2;
+        float m_y2;
+        float m_confidence;
+        unsigned int m_cls;
+    };
+
+    struct DetectionResult {
+        std::vector<Detection> m_detections;
+        cv::Mat m_image;
+    };
+
     Yolov10(std::string model_path)
         : m_model_path(model_path)
         , m_ort_env(ORT_LOGGING_LEVEL_WARNING, "yolov10")
@@ -19,8 +32,11 @@ public:
     {
     }
 
-    BoxType infer(const cv::Mat &image_RGB, float min_score = 0.25f)
+    DetectionResult infer(cv::Mat &&image, float min_score = 0.25f)
     {
+        cv::Mat image_RGB;
+        cv::cvtColor(image, image_RGB, cv::COLOR_BGR2RGB);
+
         constexpr int s_input_width = 640;
         constexpr int s_input_height = 640;
         constexpr int s_num_channels = 3;
@@ -65,7 +81,7 @@ public:
         float *output_data = output_tensor.GetTensorMutableData<float>();
 
         const int detections = static_cast<int>(shape[1]);
-        BoxType boxes;
+        std::vector<Detection> boxes;
         for (int i = 0; i < detections; i++) {
             const float *det = output_data + i * 6;
 
@@ -88,7 +104,7 @@ public:
 
             boxes.emplace_back(orig_x1, orig_y1, orig_x2, orig_y2, score, cls);
         }
-        return boxes;
+        return { std::move(boxes), std::move(image) };
     }
 
 private:

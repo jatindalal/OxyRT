@@ -1,9 +1,9 @@
 #pragma once
 
-#include "CameraInput.hpp"
-#include "Yolov10.hpp"
-#include "queue.hpp"
-#include "ring_buffer.hpp"
+#include "input/Camera.hpp"
+#include "inference/Yolov10.hpp"
+#include "core/queue.hpp"
+#include "core/ring_buffer.hpp"
 #include <atomic>
 #include <opencv2/highgui.hpp>
 #include <opencv2/opencv.hpp>
@@ -42,19 +42,14 @@ private:
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
                 continue;
             }
-            auto [boxes, image] = result_or_empty.value();
+            auto result = std::move(result_or_empty.value());
+            const auto& boxes = result.m_detections;
+            const auto& image = result.m_image;
+
             for (const auto &box : boxes) {
-                float x1 = std::get<0>(box);
-                float y1 = std::get<1>(box);
-                float x2 = std::get<2>(box);
-                float y2 = std::get<3>(box);
-                float score = std::get<4>(box);
-                unsigned int cls = std::get<5>(box);
-
-                cv::rectangle(image, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 255, 0), 2);
-
-                std::string label = "cls: " + std::to_string(cls) + " score: " + std::to_string(score);
-                cv::putText(image, label, cv::Point(x1 + 2, y1 - 2),
+                cv::rectangle(image, cv::Point(box.m_x1, box.m_y1), cv::Point(box.m_x2, box.m_y2), cv::Scalar(0, 255, 0), 2);
+                std::string label = "cls: " + std::to_string(box.m_cls) + " score: " + std::to_string(box.m_confidence);
+                cv::putText(image, label, cv::Point(box.m_x1 + 2, box.m_y1 - 2),
                     cv::FONT_HERSHEY_DUPLEX, 2,
                     cv::Scalar(0, 0, 0), 1);
             }
@@ -76,11 +71,10 @@ private:
     void capture_loop()
     {
         while (!m_shutdown.load()) {
-            cv::Mat image, rgb_image;
+            cv::Mat image;
             if (!m_camera_input.get_frame(image))
                 continue;
-            cv::cvtColor(image, rgb_image, cv::COLOR_BGR2RGB);
-            m_frame_buffer.push({ std::move(image), std::move(rgb_image) });
+            m_frame_buffer.push(std::move(image));
         }
     }
 
@@ -93,14 +87,14 @@ private:
                 continue;
             }
 
-            auto [image, rgb_image] = frame_or_empty.value();
-            auto boxes = m_model.infer(std::move(rgb_image));
-            m_result_queue.push({ std::move(boxes), std::move(image) });
+            auto image = frame_or_empty.value();
+            auto result = m_model.infer(std::move(image));
+            m_result_queue.push(std::move(result));
         }
     }
 
-    using FrameType = std::pair<cv::Mat, cv::Mat>;
-    using ResultType = std::pair<Yolov10::BoxType, cv::Mat>;
+    using FrameType = cv::Mat;
+    using ResultType = Yolov10::DetectionResult;
     RingBuffer<FrameType, 10> m_frame_buffer;
     ThreadSafeQueue<ResultType> m_result_queue;
 

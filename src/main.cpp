@@ -1,5 +1,4 @@
 #include "App.hpp"
-#include "Yolov10.hpp"
 #include <exception>
 #include <iostream>
 
